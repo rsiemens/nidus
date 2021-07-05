@@ -1,0 +1,10 @@
+{
+	"cluster": {
+		"node-0": ["localhost", 12000],
+		"node-1": ["localhost", 13000],
+		"node-2": ["localhost", 14000],
+		"node-3": ["localhost", 15000],
+		"node-4": ["localhost", 16000]
+	},
+	"heartbeat_interval": 0.05
+}
