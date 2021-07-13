@@ -1,3 +1,86 @@
+import io
+import json
+from struct import pack, unpack
+from typing import NamedTuple
+
+
+class Pager:
+    """
+    2048 bytes page size.
+
+    Offset | Bytes | Description
+    -------+-------+--------------------------------
+       0   |   2   |  Remaining space on the page
+    -------+-------+--------------------------------
+       2   |   4   |  Term number for a log entry
+    -------+-------+--------------------------------
+       6   |   4   |  Size of log entry item in bytes
+    -------+-------+--------------------------------
+      10   |   N   |  Log entry item
+    -------+-------+--------------------------------
+
+    The log entry portion of a page is repeated until the page can't fit anymore entries
+    """
+
+    def __init__(self, log_file):
+        self.page_size = 2048
+        self.log_file = log_file
+        self.cached_last_page = None
+
+        with open(log_file, "wb+"):
+            pass
+
+    def get_last_page(self):
+        if self.cached_last_page:
+            return self.cached_last_page
+
+        page_num = 0
+        remaining_space = 0
+        data = None
+
+        for n, space, page in self:
+            page_num = n
+            remaining_space = space
+            data = page
+
+        if data is None:
+            remaining_space = self.page_size - 2
+            data = b"\x00" * remaining_space
+
+        self.cached_last_page = (page_num, remaining_space, data)
+        return page_num, remaining_space, data
+
+    def append_log_entry(self, entry):
+        serialized = entry.to_bytes()
+        serialized_size = len(serialized)
+        page_num, remaining_space, data = self.get_last_page()
+
+        data = data[: self.page_size - 2 - remaining_space] + serialized
+        remaining_space -= serialized_size
+        data += b"\x00" * remaining_space
+
+        with open(self.log_file, "rb+") as f:
+            f.seek(self.page_size * page_num)
+            f.write(pack(">H", remaining_space) + data)
+
+        self.cached_last_page = (page_num, remaining_space, data)
+
+    def __iter__(self):
+        page_num = 0
+        with open(self.log_file, "rb") as f:
+            while True:
+                f.seek(self.page_size * page_num)
+                page = f.read(self.page_size)
+
+                if not page:
+                    break
+
+                remaining_space = unpack(">H", page[:2])[0]
+                data = page[2:]
+                yield page_num, remaining_space, data
+                page_num += 1
+
+
 class LogEntry:
     def __init__(self, term, item):
         self.term = term
@@ -8,6 +91,14 @@ class LogEntry:
 
     def __repr__(self):
         return f"<LogEntry term={self.term} item={self.item}>"
+
+    def to_bytes(self):
+        item_json = json.dumps(self.item, separators=(",", ":")).encode("utf8")
+        return pack(">LL", self.term, len(item_json)) + item_json
+
+    @classmethod
+    def from_bytes(self):
+        pass
 
 
 def append_entries(log, prev_index, prev_term, entries):

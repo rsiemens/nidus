@@ -1,6 +1,69 @@
+import os
 from unittest import TestCase
 
-from nidus.log import LogEntry, append_entries
+from nidus.log import LogEntry, Pager, append_entries
+
+
+class PagerTestCases(TestCase):
+    test_log_file = "test_log.db"
+
+    def tearDown(self):
+        if os.path.exists(self.test_log_file):
+            os.remove(self.test_log_file)
+
+    def fill_pages(self, pager, n_pages):
+        entry = LogEntry(1, "hello world")
+        entry_bytes = entry.to_bytes()
+        entries_per_page = (pager.page_size - 2) // len(entry_bytes)
+
+        for _ in range(n_pages):
+            for _ in range(entries_per_page):
+                pager.append_log_entry(entry)
+
+    def test_get_last_page(self):
+        pager = Pager(self.test_log_file)
+
+        self.assertIsNone(pager.cached_last_page)
+        page = pager.get_last_page()
+        expected_page_num = 0
+        expected_remaining = pager.page_size - 2
+        expected_data = b"\x00" * expected_remaining
+
+        self.assertEqual(page, (expected_page_num, expected_remaining, expected_data))
+        self.assertEqual(
+            pager.cached_last_page,
+            (expected_page_num, expected_remaining, expected_data),
+        )
+
+    def test_append_log_entry(self):
+        pager = Pager(self.test_log_file)
+        entry = LogEntry(1, ["SET", "hello", "world"])
+        entry_bytes = entry.to_bytes()
+
+        pager.append_log_entry(entry)
+        expected_page_num = 0
+        expected_remaining = pager.page_size - 2 - len(entry_bytes)
+        expected_data = (
+            b'\x00\x00\x00\x01\x00\x00\x00\x17["SET","hello","world"]'
+            + b"\x00" * expected_remaining
+        )
+
+        self.assertEqual(
+            pager.get_last_page(),
+            (expected_page_num, expected_remaining, expected_data),
+        )
+
+        pager.cached_last_page = None
+        self.assertEqual(
+            pager.get_last_page(),
+            (expected_page_num, expected_remaining, expected_data),
+        )
+
+    def test_append_log_entry_many_pages(self):
+        pager = Pager(self.test_log_file)
+        self.fill_pages(pager, 4)
+        pages = [p for p in pager]
+        self.assertEqual(len(pages), 4)
 
 
 class AppendEntriesTestCases(TestCase):

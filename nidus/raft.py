@@ -342,7 +342,7 @@ class RaftNode(Actor):
             self.election_timer.cancel()
 
         target = lambda addr: self.network.send(addr, ElectionRequest())
-        base_interval = self.heartbeat_interval * 50
+        base_interval = self.heartbeat_interval * 30
         interval = base_interval + random.random() * base_interval
 
         self.election_timer = Timer(interval, target, args=[self.node_id])
