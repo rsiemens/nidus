@@ -10,6 +10,7 @@ base_config = {
     "cluster": {},
     # How often the leader will send hearthbeats to followers in seconds.
     "heartbeat_interval": 0.05,  # 50ms
+    "storage_dir": "nidus_logs",
     # Python standard logging dictionary configuration
     # https://docs.python.org/3/library/logging.config.html#configuration-dictionary-schema
     "logging": {

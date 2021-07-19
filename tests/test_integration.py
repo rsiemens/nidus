@@ -1,11 +1,13 @@
 import json
 import logging
+import os
+import shutil
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
 from nidus import actors
 from nidus.kvstore import KVStore
-from nidus.log import LogEntry
+from nidus.log import Log, LogEntry
 from nidus.messages import ClientRequest, ElectionRequest, HeartbeatRequest, VoteRequest
 from nidus.raft import RaftNetwork
 from nidus.state import RaftState
@@ -15,6 +17,12 @@ actors._system = actors.SyncSystem()
 
 
 class IntegrationTestsCases(TestCase):
+    test_log_dir = "test_nidus_logs"
+
+    def tearDown(self):
+        if os.path.exists(self.test_log_dir):
+            shutil.rmtree(self.test_log_dir)
+
     def assert_log(self, actual, expected):
         self.assertEqual(len(actual), len(expected))
 
@@ -22,8 +30,9 @@ class IntegrationTestsCases(TestCase):
             self.assertEqual(log.term, expected[i])
             self.assertEqual(log.item, expected[i])
 
-    def create_log(self, items):
-        return [LogEntry(term=i, item=i) for i in items]
+    def create_log(self, state, items):
+        for i in items:
+            state.log.append(LogEntry(term=i, item=i))
 
     @patch("nidus.raft.Timer")
     def test_figure_6(self, mock_timer_cls):
@@ -36,6 +45,7 @@ class IntegrationTestsCases(TestCase):
                 "node-4": "n4",
             },
             "heartbeat_interval": 0.05,
+            "storage_dir": self.test_log_dir,
         }
         net = RaftNetwork(config, Mock())
         n0 = net.create_node("node-0")
@@ -47,13 +57,13 @@ class IntegrationTestsCases(TestCase):
         n0.state.current_term = 3
         n0.state.commit_index = 6
         n0.state.last_applied = 6
-        n0.state.log = self.create_log([1, 1, 1, 2, 3, 3, 3, 3])
+        self.create_log(n0.state, [1, 1, 1, 2, 3, 3, 3, 3])
         n0.state.become_leader(n0.peers + [n0.node_id])
 
-        n1.state.log = self.create_log([1, 1, 1, 2, 3])
-        n2.state.log = self.create_log([1, 1, 1, 2, 3, 3, 3, 3])
-        n3.state.log = self.create_log([1, 1])
-        n4.state.log = self.create_log([1, 1, 1, 2, 3, 3, 3])
+        self.create_log(n1.state, [1, 1, 1, 2, 3])
+        self.create_log(n2.state, [1, 1, 1, 2, 3, 3, 3, 3])
+        self.create_log(n3.state, [1, 1])
+        self.create_log(n4.state, [1, 1, 1, 2, 3, 3, 3])
 
         # The hearbeat should cascade into a series of messages
         # that get everyone up to the same spot as node-0 and
@@ -88,6 +98,7 @@ class IntegrationTestsCases(TestCase):
                 "f": "f",
             },
             "heartbeat_interval": 0.05,
+            "storage_dir": self.test_log_dir,
         }
 
         net = RaftNetwork(config, Mock())
@@ -111,15 +122,15 @@ class IntegrationTestsCases(TestCase):
         # again and remained down for several terms.
         leader.state.current_term = 8
         leader.state.commit_index = 4
-        leader.state.log = self.create_log([1, 1, 1, 4, 4, 5, 5, 6, 6, 6])
+        self.create_log(leader.state, [1, 1, 1, 4, 4, 5, 5, 6, 6, 6])
         leader.state.become_leader(leader.peers + [leader.node_id])
 
-        a.state.log = self.create_log([1, 1, 1, 4, 4, 5, 5, 6, 6])
-        b.state.log = self.create_log([1, 1, 1, 4])
-        c.state.log = self.create_log([1, 1, 1, 4, 4, 5, 5, 6, 6, 6, 6])
-        d.state.log = self.create_log([1, 1, 1, 4, 4, 5, 5, 6, 6, 6, 7, 7])
-        e.state.log = self.create_log([1, 1, 1, 4, 4, 4, 4])
-        f.state.log = self.create_log([1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 3])
+        self.create_log(a.state, [1, 1, 1, 4, 4, 5, 5, 6, 6])
+        self.create_log(b.state, [1, 1, 1, 4])
+        self.create_log(c.state, [1, 1, 1, 4, 4, 5, 5, 6, 6, 6, 6])
+        self.create_log(d.state, [1, 1, 1, 4, 4, 5, 5, 6, 6, 6, 7, 7])
+        self.create_log(e.state, [1, 1, 1, 4, 4, 4, 4])
+        self.create_log(f.state, [1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 3])
 
         net.send("leader", HeartbeatRequest())
         net.actor_system.flush()

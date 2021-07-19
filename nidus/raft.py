@@ -1,4 +1,5 @@
 import logging
+import os
 import random
 from threading import Timer
 
@@ -29,6 +30,9 @@ class RaftNetwork:
         self.raft_ctx = None
         self.state_machine_cls = state_machine_cls
 
+        if not os.path.exists(config["storage_dir"]):
+            os.makedirs(config["storage_dir"])
+
     def create_node(self, node_id):
         addr = self.config["cluster"][node_id]
         peers = [n for n in self.config["cluster"] if n != node_id]
@@ -57,7 +61,9 @@ class RaftNode(Actor):
         self.node_id = node_id
         self.peers = peers
         self.network = network
-        self.state = RaftState()
+        self.state = RaftState(
+            os.path.join(self.network.config["storage_dir"], f"{node_id}.log")
+        )
         self.state_machine = state_machine
         self.heartbeat_interval = network.config["heartbeat_interval"]
         self.heartbeat_timer = None

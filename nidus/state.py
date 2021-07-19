@@ -1,4 +1,4 @@
-from nidus.log import append_entries
+from nidus.log import Log, append_entries
 
 
 class RaftState:
@@ -7,12 +7,12 @@ class RaftState:
     CANDIDATE = "CANDIDATE"
     FOLLOWER = "FOLLOWER"
 
-    def __init__(self):
+    def __init__(self, log_path):
         self.status = self.FOLLOWER
         self.current_term = 0
         self.voted_for = None
         self.votes = set()
-        self.log = []
+        self.log = Log(log_path)
         self.commit_index = -1
         self.last_applied = -1
         self.match_index = {}

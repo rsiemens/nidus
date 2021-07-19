@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+import shutil
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
@@ -20,10 +22,17 @@ CLUSTER_CONFIG = {
         "node-2": "n2",
     },
     "heartbeat_interval": 0.05,
+    "storage_dir": "test_nidus_logs",
 }
 
 
 class RaftNodeTestCases(TestCase):
+    test_log_dir = "test_nidus_logs"
+
+    def tearDown(self):
+        if os.path.exists(CLUSTER_CONFIG["storage_dir"]):
+            shutil.rmtree(CLUSTER_CONFIG["storage_dir"])
+
     @patch("nidus.raft.RaftNode.restart_election_timer")
     def test_has_consensus(self, mock_restart_timer):
         net = RaftNetwork(CLUSTER_CONFIG, KVStore)
