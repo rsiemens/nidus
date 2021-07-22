@@ -9,7 +9,6 @@ from nidus.state import RaftState
 
 class RaftStateTestCases(TestCase):
     test_log_dir = "test_nidus_logs"
-    test_log_file = f"{test_log_dir}/test_log.db"
 
     def setUp(self):
         os.makedirs(self.test_log_dir)
@@ -19,7 +18,7 @@ class RaftStateTestCases(TestCase):
             shutil.rmtree(self.test_log_dir)
 
     def test_append_entires_success(self):
-        state = RaftState(self.test_log_file)
+        state = RaftState(self.test_log_dir, "node-0")
         state.status = state.FOLLOWER
         state.current_term = 1
 
@@ -35,7 +34,7 @@ class RaftStateTestCases(TestCase):
         )
 
     def test_append_entries_failure(self):
-        state = RaftState(self.test_log_file)
+        state = RaftState(self.test_log_dir, "node-0")
         state.status = state.FOLLOWER
         state.current_term = 1
         state.log.append(LogEntry(1, ["SET", "foo", "bar"]))

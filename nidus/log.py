@@ -31,8 +31,8 @@ class Pager:
     The log entry portion of a page is repeated until the page can't fit anymore entries
     """
 
-    def __init__(self, log_file):
-        self.page_size = 2048
+    def __init__(self, log_file, page_size=2048):
+        self.page_size = page_size
         self.log_file = log_file
 
         if not os.path.exists(log_file):
@@ -46,8 +46,8 @@ class Pager:
 
         if raw_page:
             remaining_space = unpack(">H", raw_page[:2])[0]
-            # remove buffer space with null bytes
-            data = page[2 : self.page_size - remaining_space]
+            # lop off the null bytes
+            data = raw_page[2:-remaining_space]
             page = Page(page_num, remaining_space, data)
         else:
             page = None
@@ -73,13 +73,14 @@ class Pager:
         page_num = 0
         with open(self.log_file, "rb") as f:
             while True:
-                page = f.read(self.page_size)
+                raw_page = f.read(self.page_size)
 
-                if not page:
+                if not raw_page:
                     break
 
-                remaining_space = unpack(">H", page[:2])[0]
-                data = page[2:]
+                remaining_space = unpack(">H", raw_page[:2])[0]
+                # lop off the null bytes
+                data = raw_page[2:-remaining_space]
                 yield Page(page_num, remaining_space, data)
                 page_num += 1
 

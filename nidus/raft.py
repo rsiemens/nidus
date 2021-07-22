@@ -61,9 +61,7 @@ class RaftNode(Actor):
         self.node_id = node_id
         self.peers = peers
         self.network = network
-        self.state = RaftState(
-            os.path.join(self.network.config["storage_dir"], f"{node_id}.log")
-        )
+        self.state = RaftState(self.network.config["storage_dir"], node_id)
         self.state_machine = state_machine
         self.heartbeat_interval = network.config["heartbeat_interval"]
         self.heartbeat_timer = None
