@@ -76,7 +76,7 @@ class TCPSystem:
         for addr in list(self._actors):
             self.destroy(addr)
 
-    def send(self, to, msg):
+    def _send(self, to, msg):
         try:
             sock = socket(AF_INET, SOCK_STREAM)
             sock.connect(to)
@@ -87,7 +87,9 @@ class TCPSystem:
             logger.debug(f"failed to send message to {to}: {ex}")
         else:
             logger.debug(f"sent message to {to}: {msg}")
-        pass
+
+    def send(self, to, msg):
+        Thread(target=self._send, args=[to, msg]).start()
 
     def _tcp_server(self, server_addr, inbox, shutdown_evt):
         sock = socket(AF_INET, SOCK_STREAM)
