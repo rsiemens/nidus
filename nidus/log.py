@@ -15,7 +15,7 @@ class PageEmptyException(Exception):
 
 class Pager:
     """
-    2048 bytes page size.
+    General page structure
 
     Offset | Bytes | Description
     -------+-------+--------------------------------
@@ -31,7 +31,7 @@ class Pager:
     The log entry portion of a page is repeated until the page can't fit anymore entries
     """
 
-    def __init__(self, log_file, page_size=2048):
+    def __init__(self, log_file, page_size=4096):
         self.page_size = page_size
         self.log_file = log_file
 
@@ -95,8 +95,7 @@ class Page:
 
     def load(self):
         cursor = 0
-        end = len(self.data) - self.remaining_space
-        while cursor < end:
+        while cursor < len(self.data):
             term, item_size = unpack(">LL", self.data[cursor : cursor + 8])
             cursor += 8
             item = self.data[cursor : cursor + item_size]
@@ -123,6 +122,7 @@ class Page:
         serialized = entry.to_bytes()
         self.data = self.data[: -len(serialized)]
         self.remaining_space += len(serialized)
+        return entry
 
 
 class Log:
