@@ -58,6 +58,6 @@ class KVStore:
                 assert len(item[1:]) == 0
                 return self.list_buckets()
             else:
-                return "NO_CMD"
+                return "BAD_CMD"
         except AssertionError:
             return "BAD_ARGS"

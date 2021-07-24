@@ -94,7 +94,7 @@ class KVStoreTestCases(TestCase):
         self.assertEqual(store.apply(["DELBUCKET", "foo_bucket"]), "NO_BUCKET")
         self.assertEqual(store.buckets, {})
 
-        self.assertEqual(store.apply(["FAKE", "foo_bucket"]), "NO_CMD")
+        self.assertEqual(store.apply(["FAKE", "foo_bucket"]), "BAD_CMD")
         self.assertEqual(store.apply(["GET", "foo_bucket"]), "BAD_ARGS")
         self.assertEqual(store.apply(["SET", "foo_bucket", "baz"]), "BAD_ARGS")
         self.assertEqual(store.apply(["DEL"]), "BAD_ARGS")

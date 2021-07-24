@@ -6,5 +6,6 @@
 		"node-3": ["localhost", 15000],
 		"node-4": ["localhost", 16000]
 	},
-	"heartbeat_interval": 0.05
+	"heartbeat_interval": 0.03,
+	"storage_dir": "nidus_logs"
 }
