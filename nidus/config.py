@@ -17,15 +17,24 @@ base_config = {
         "version": 1,
         "formatters": {
             "node": {"format": "%(asctime)s - [%(node_id)s] %(message)s"},
+            "actor": {"format": "%(asctime)s - %(message)s"},
         },
         "handlers": {
             "node_console": {
                 "class": "logging.StreamHandler",
                 "level": "INFO",
                 "formatter": "node",
-            }
+            },
+            "actor_console": {
+                "class": "logging.StreamHandler",
+                "level": "INFO",
+                "formatter": "actor",
+            },
         },
-        "loggers": {"node_logger": {"level": "INFO", "handlers": ["node_console"]}},
+        "loggers": {
+            "node_logger": {"level": "INFO", "handlers": ["node_console"]},
+            "actor_logger": {"level": "INFO", "handlers": ["actor_console"]},
+        },
     },
 }
 

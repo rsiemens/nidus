@@ -10,12 +10,7 @@ from threading import Event, Thread
 from nidus.messages import message_from_payload
 from nidus.transport import MsgTransport
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler(stream=sys.stdout)
-handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
-logger.addHandler(handler)
-
+logger = logging.getLogger("actor_logger")
 _system = None
 
 
